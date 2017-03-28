@@ -2,20 +2,29 @@
  * forest.h
  ********************************************************/
 
+// forest code from streamingbc
+
+typedef double bc_t;
+
+typedef struct {
+    int64_t level;
+    int64_t pathsToRoot;
+    int64_t edgesBelow;
+    int64_t edgesAbove;
+    bc_t delta;
+} bcV;
+
 typedef struct {
     int64_t NV;
-    vertexId_t root;
-    vertexId_t* d;
-    int64_t* sigma;
-    float* delta;
+    bcV* vArr;
 } bcTree;
 
 typedef bcTree* bcTreePtr;
 
 typedef struct {
-	int64_t NV;
-	vertexId_t* root;
     bcTreePtr* forest;
+    bc_t* totalBC;
+    int64_t NV;
 } bcForest;
 
 typedef bcForest* bcForestPtr;

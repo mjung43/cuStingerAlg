@@ -109,6 +109,16 @@ bcTree* copyTreeDeviceToHost(bcTree* tree_d) {
 	return newTree_h;
 }
 
+bcForest* createForestHost(vertexId_t* root, int64_t numVertices) {
+	bcForest* newForest_h = (bcForest*) allocHostArray(1, sizeof(bcForest));
+	newForest_h->NV = numVertices;
+	newForest_h->forest = (bcTreePtr*) allocHostArray(numVertices, sizeof(bcTreePtr));
+	for (int64_t i = 0; i < numVertices; i++) {
+		newForest_h->forest[i] = createTreeHost(root[i], numVertices);
+	}
+	return newForest_h;
+}
+
 void destroyTreeHost(bcTree* tree_h) {
 	freeHostArray(tree_h->d);
 	freeHostArray(tree_h->sigma);
@@ -132,36 +142,50 @@ void destroyTreeDevice(bcTree* tree_d) {
 
 int main(int argc, char** argv) {
 	// test
-	int64_t numVertices = 3;
-	vertexId_t root = 5;
+	
+	// int64_t numVertices = 3;
+	// vertexId_t root = 5;
 
-	bcTree* tree_h = createTreeHost(root, numVertices);
+	// bcTree* tree_h = createTreeHost(root, numVertices);
 
+	// for (int i = 0; i < numVertices; i++) {
+	// 	tree_h->d[i] = i;
+	// 	tree_h->sigma[i] = 10 + i;
+	// 	tree_h->delta[i] = 100 + i;
+	// }
+
+	// bcTree* newTree_d = copyTreeHostToDevice(tree_h);
+
+	// bcTree* newTree_h = copyTreeDeviceToHost(newTree_d);
+
+	// printf("%ld\n", newTree_h->NV);
+	// printf("%d\n", newTree_h->root);
+
+	// printf("Printing d\n");
+	// for (int i = 0; i < numVertices; i++) {
+	// 	printf("%d\n", newTree_h->d[i]);
+	// }
+
+	// printf("Printing sigma\n");
+	// for (int i = 0; i < numVertices; i++) {
+	// 	printf("%ld\n", newTree_h->sigma[i]);
+	// }
+
+	// printf("Printing delta\n");
+	// for (int i = 0; i < numVertices; i++) {
+	// 	printf("%f\n", newTree_h->delta[i]);
+	// }
+
+	int64_t numVertices = 5;
+
+	vertexId_t* root = (vertexId_t*) allocHostArray(5, sizeof(vertexId_t));
 	for (int i = 0; i < numVertices; i++) {
-		tree_h->d[i] = i;
-		tree_h->sigma[i] = 10 + i;
-		tree_h->delta[i] = 100 + i;
+		root[i] = 3 * (i + 1);
 	}
 
-	bcTree* newTree_d = copyTreeHostToDevice(tree_h);
+	bcForest* forest = createForestHost(root, numVertices);
 
-	bcTree* newTree_h = copyTreeDeviceToHost(newTree_d);
-
-	printf("%ld\n", newTree_h->NV);
-	printf("%d\n", newTree_h->root);
-
-	printf("Printing d\n");
 	for (int i = 0; i < numVertices; i++) {
-		printf("%d\n", newTree_h->d[i]);
-	}
-
-	printf("Printing sigma\n");
-	for (int i = 0; i < numVertices; i++) {
-		printf("%ld\n", newTree_h->sigma[i]);
-	}
-
-	printf("Printing delta\n");
-	for (int i = 0; i < numVertices; i++) {
-		printf("%f\n", newTree_h->delta[i]);
+		printf("%d\n", forest->forest[i]->root);
 	}
 }
