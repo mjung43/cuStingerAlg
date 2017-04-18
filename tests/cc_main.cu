@@ -12,7 +12,7 @@
 #include <getopt.h>
 
 #include "algs.cuh"
-#include "static_connected_components/static_cc.cuh"
+#include "streaming_connected_components/cc.cuh"
 
 using namespace cuStingerAlgs;
 using namespace std;
@@ -189,7 +189,7 @@ int main(const int argc, char **argv) {
 
 	cout << "Finished setting up cuStinger" << endl;
 
-	StaticConnectedComponents scc;
+	StreamingConnectedComponents scc;
 
 	cout << "Initializing" << endl;
 
@@ -198,6 +198,19 @@ int main(const int argc, char **argv) {
 	cout << "Running" << endl;
 
 	scc.Run(custing);
+
+	// vertexId_t* srcs = (vertexId_t*) allocHostArray(5, sizeof(vertexId_t));
+	// vertexId_t* dsts = (vertexId_t*) allocHostArray(5, sizeof(vertexId_t));
+
+	// for (int i = 0; i < 5; i++) {
+	// 	srcs[i] = rand() % nv;
+	// 	dsts[i] = rand() % nv;
+	// 	if (srcs[i] == dsts[i]) {
+	// 		i--;
+	// 	}
+	// }
+
+	// scc.InsertEdges(custing, srcs, dsts, 5);
 
 	scc.Reset();
 	scc.Release();

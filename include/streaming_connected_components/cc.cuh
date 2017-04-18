@@ -26,7 +26,7 @@ public:
 	bool done;
 };
 
-class StaticConnectedComponents:public StaticAlgorithm {
+class StreamingConnectedComponents:public StaticAlgorithm {
 public:	
 
 	void Init(cuStinger& custing);
@@ -60,6 +60,8 @@ public:
 	void getLevelArrayForHost(vertexId_t* hostArr) {
 		copyArrayDeviceToHost(hostCCData.level, hostArr, hostCCData.nv, sizeof(vertexId_t) );
 	}
+
+	void InsertEdges(cuStinger& custing, vertexId_t* s, vertexId_t* t, length_t len);
 
 	ccData hostCCData, *deviceCCData;
 
@@ -101,13 +103,77 @@ public:
 	static __device__ __forceinline__ void findNextVertex(cuStinger* custing, vertexId_t src, void* metadata) {
 		ccData* data = (ccData*) metadata;
 		if (data->level[src] == INT32_MAX) {
-			if (data->level[data->root] == INT32_MAX || src < data->root) {
-				data->root = src;
-				data->done = false;
+			data->temp.enqueue(src);
+		}
+		// change it so next pointer is pointing to temp and temp is pointing to empty next at the end
+	}
+
+	static __device__ __forceinline__ void insertEdge(cuStinger* custing, vertexId_t s, vertexId_t d, void* metadata) {
+		ccData* data = (ccData*) metadata;
+		if (data->CId[s] == data->CId[d]) {
+			if (data->level[s] > 0) {
+				if (data->level[d] < 0) {
+					// d is not safe
+					if (data->level[s] < -1 * data->level[d]) {
+						if (data->count[d] < data->thresh) {
+							data->PN[data->nv * d + data->count[d]] = s;
+							data->count[d]++;
+						} else {
+							data->PN[data->nv * d] = s; 
+						}
+						data->level[d] *= -1;
+					}
+				}
+			} else {
+				if (data->count[d] < data->thresh) {
+					if (data->level[s] < data->level[d]) {
+						data->PN[data->nv * d + data->count[d]] = s;
+						data->count[d]++;
+					} else if (data->level[s] == data->level[d]) {
+						data->PN[data->nv * d + data->count[d]] = -1 * s;
+						data->count[d]++;
+					}
+				} else if (data->level[s] < data->level[d]) {
+					for (length_t i = 0; i < data->thresh; i++) {
+						if (data->PN[data->nv * d + i] < 0) {
+							data->PN[data->nv * d + i] = s;
+							break;
+						}
+					}
+				}
 			}
+
 		}
 	}
 
 };
+
+template <cusSubKernelEdge cusSK>
+static __global__ void device_allEinAs_TraverseEdges(cuStinger* custing, void* metadata, int32_t edgesPerThreadBlock, vertexId_t* srcs, vertexId_t* dsts, length_t len) {
+	vertexId_t v_init = blockIdx.x * edgesPerThreadBlock + threadIdx.x;
+
+	for (vertexId_t v_hat = 0; v_hat < edgesPerThreadBlock; v_hat+=blockDim.x){
+		vertexId_t v = v_init + v_hat;
+		if(v > len){
+			break;
+		}
+		vertexId_t src = srcs[v];
+		vertexId_t dst = srcs[v];		
+		(cusSK) (custing, src, dst, metadata);
+	}
+}
+
+template <cusSubKernelEdge cusSK>
+static void allEinAs_TraverseEdges(cuStinger& custing, void* metadata, vertexId_t* srcs, vertexId_t* dsts, length_t len) {
+	dim3 numBlocks(1, 1); int32_t threads=32;
+	dim3 threadsPerBlock(threads, 1);
+	int32_t edgesPerThreadBlock = 512;
+
+	numBlocks.x = ceil((float) len / (float) edgesPerThreadBlock);
+	device_allEinAs_TraverseEdges<cusSK><<<numBlocks, threadsPerBlock>>>(custing.devicePtr(), metadata, edgesPerThreadBlock, srcs, dsts, len);
+}
+
+
+
 
 }
