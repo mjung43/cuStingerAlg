@@ -10,7 +10,7 @@
 
 #include "macros.cuh"
 
-#include "static_connected_components/static_cc.cuh"
+#include "streaming_connected_components/cc.cuh"
 
 
 using namespace std;
@@ -18,7 +18,7 @@ using namespace std;
 namespace cuStingerAlgs {
 
 
-void StaticConnectedComponents::Init(cuStinger& custing) {
+void StreamingConnectedComponents::Init(cuStinger& custing) {
 
 	hostCCData.num = 0;
 
@@ -45,23 +45,23 @@ void StaticConnectedComponents::Init(cuStinger& custing) {
 	Reset();
 }
 
-void StaticConnectedComponents::Reset() {
+void StreamingConnectedComponents::Reset() {
 	hostCCData.queue.resetQueue();
 	hostCCData.currLevel = INT32_MAX;
 
 	copyArrayHostToDevice(&hostCCData, deviceCCData, 1, sizeof(ccData));
 }
 
-void StaticConnectedComponents::setInputParameters(vertexId_t root) {
+void StreamingConnectedComponents::setInputParameters(vertexId_t root) {
 	hostCCData.root = root;
 }
 
-void StaticConnectedComponents::Release() {
+void StreamingConnectedComponents::Release() {
 	freeDeviceArray(deviceCCData);
 	freeDeviceArray(hostCCData.level);
 }
 
-void StaticConnectedComponents::Run(cuStinger& custing) {
+void StreamingConnectedComponents::Run(cuStinger& custing) {
 
 	// cusLoadBalance cusLB(hostCCData.nv);
 
@@ -85,7 +85,7 @@ void StaticConnectedComponents::Run(cuStinger& custing) {
 
 }
 
-void StaticConnectedComponents::RunBfsTraversal(cuStinger& custing) {
+void StreamingConnectedComponents::RunBfsTraversal(cuStinger& custing) {
 
 	cusLoadBalance cusLB(hostCCData.nv);
 	
@@ -107,6 +107,31 @@ void StaticConnectedComponents::RunBfsTraversal(cuStinger& custing) {
 		SyncDeviceWithHost();
 	}
 }
+
+void StreamingConnectedComponents::InsertEdges(cuStinger& custing, vertexId_t* s, vertexId_t* d, length_t len) {
+	//call insert method in ccoperator
+	BatchUpdateData bud(len, true, custing.nv);
+	vertexId_t *srcs = bud.getSrc();
+	vertexId_t *dsts = bud.getDst();
+
+	// need to put in operator later
+	for (length_t i = 0; i < len; i++) {
+		srcs[i] = s[i];
+		dsts[i] = d[i];
+	}
+
+	// inserting edges into custinger
+	length_t requireAllocation;
+	BatchUpdate bu = BatchUpdate(bud);
+
+	custing.edgeInsertions(bu, requireAllocation);
+
+	// need to do for all new edges <s,t> in E later
+
+	allEinAs_TraverseEdges<ccOperator::insertEdge>(custing, deviceCCData, srcs, dsts, len);
+
+}
+
 
 
 }
