@@ -82,32 +82,33 @@ cuda_add_library(custingerAlgs
 #           tests/cct_upd.cpp
 #            )
 
-cuda_add_executable(static_bc_tester
-          tests/static_bc.cu
-          src/static_betweenness_centrality/bc.cu
-          src/static_betweenness_centrality/bc_tree.cu
-          src/load_balance.cu
-          )
+# cuda_add_executable(static_bc_tester
+#           tests/static_bc.cu
+#           src/static_betweenness_centrality/bc.cu
+#           src/static_betweenness_centrality/bc_tree.cu
+#           src/load_balance.cu
+#           )
 
-cuda_add_executable(cus-alg-tester 
-          tests/alg-tester.cu
-          )
+# cuda_add_executable(cus-alg-tester 
+#           tests/alg-tester.cu
+#           )
 
 
-TARGET_LINK_LIBRARIES(static_bc_tester custingerAlgs custinger  /usr/local/cuda/lib64/libcudart.so)
+# TARGET_LINK_LIBRARIES(static_bc_tester custingerAlgs custinger  /usr/local/cuda/lib64/libcudart.so)
 
 # cuda_add_executable(cus-alg-tester 
 #             tests/alg-tester.cu
 #              )
 
-cuda_add_executable(static-cc-tester
-           tests/static_cc_main.cu
-           src/static_connected_components/static_cc.cu
-           )
+# cuda_add_executable(static-cc-tester
+#            tests/static_cc_main.cu
+#            src/static_connected_components/static_cc.cu
+#            )
 
 cuda_add_executable(cc-tester
            tests/cc_main.cu
            src/streaming_connected_components/cc.cu
+           src/static_connected_components/cc_load_balanced.cu
            )
 
 # TARGET_LINK_LIBRARIES(cuAlgCCT custingerAlgs custinger  /usr/local/cuda/lib64/libcudart.so)
@@ -115,7 +116,7 @@ cuda_add_executable(cc-tester
 
 # TARGET_LINK_LIBRARIES(cus-alg-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
 
-TARGET_LINK_LIBRARIES(forest-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
-TARGET_LINK_LIBRARIES(static-cc-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
+# TARGET_LINK_LIBRARIES(forest-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
+# TARGET_LINK_LIBRARIES(static-cc-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
 
 TARGET_LINK_LIBRARIES(cc-tester custingerAlgs custinger /usr/local/cuda/lib64/libcudart.so)
