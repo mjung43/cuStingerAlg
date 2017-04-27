@@ -8,7 +8,7 @@
 #include "update.hpp"
 #include "cuStinger.hpp"
 
-#include "macros.cuh"
+#include "operators.cuh"
 
 #include "streaming_connected_components/cc.cuh"
 
@@ -41,6 +41,8 @@ void StreamingConnectedComponents::Init(cuStinger& custing) {
 	deviceCCData = (ccData*) allocDeviceArray(1, sizeof(ccData));
 
 	copyArrayHostToDevice(&hostCCData, deviceCCData, 1, sizeof(ccData));
+        
+    cusLB = new cusLoadBalance(custing);
 
 	Reset();
 }
@@ -57,6 +59,7 @@ void StreamingConnectedComponents::setInputParameters(vertexId_t root) {
 }
 
 void StreamingConnectedComponents::Release() {
+    free(cusLB);
 	freeDeviceArray(deviceCCData);
 	freeDeviceArray(hostCCData.level);
 }
@@ -87,7 +90,7 @@ void StreamingConnectedComponents::Run(cuStinger& custing) {
 
 void StreamingConnectedComponents::RunBfsTraversal(cuStinger& custing) {
 
-	cusLoadBalance cusLB(hostCCData.nv);
+	// cusLoadBalance cusLB(hostCCData.nv);
 	
 	hostCCData.queue.enqueueFromHost(hostCCData.root);
 
@@ -97,7 +100,7 @@ void StreamingConnectedComponents::RunBfsTraversal(cuStinger& custing) {
 	length_t prevEnd = 1;
 	while((hostCCData.queue.getActiveQueueSize()) > 0){
 
-		allVinA_TraverseEdges_LB<ccOperator::ccExpandFrontier>(custing, deviceCCData, cusLB, hostCCData.queue);
+		allVinA_TraverseEdges_LB<ccOperator::ccExpandFrontier>(custing, deviceCCData, *cusLB, hostCCData.queue);
 
 		SyncHostWithDevice();
 		hostCCData.queue.setQueueCurr(prevEnd);
@@ -108,27 +111,27 @@ void StreamingConnectedComponents::RunBfsTraversal(cuStinger& custing) {
 	}
 }
 
-void StreamingConnectedComponents::InsertEdges(cuStinger& custing, vertexId_t* s, vertexId_t* d, length_t len) {
+void StreamingConnectedComponents::InsertEdges(cuStinger& custing, BatchUpdate& bu, length_t len) {
 	//call insert method in ccoperator
-	BatchUpdateData bud(len, true, custing.nv);
-	vertexId_t *srcs = bud.getSrc();
-	vertexId_t *dsts = bud.getDst();
+	// BatchUpdateData bud(len, true, custing.nv);
+	// vertexId_t *srcs = bud.getSrc();
+	// vertexId_t *dsts = bud.getDst();
 
-	// need to put in operator later
-	for (length_t i = 0; i < len; i++) {
-		srcs[i] = s[i];
-		dsts[i] = d[i];
-	}
+	// // need to put in operator later
+	// for (length_t i = 0; i < len; i++) {
+	// 	srcs[i] = s[i];
+	// 	dsts[i] = d[i];
+	// }
 
-	// inserting edges into custinger
+	// // inserting edges into custinger
+	// BatchUpdate bu = BatchUpdate(bud);
+
 	length_t requireAllocation;
-	BatchUpdate bu = BatchUpdate(bud);
+	
 
 	custing.edgeInsertions(bu, requireAllocation);
 
-	// need to do for all new edges <s,t> in E later
-
-	allEinAs_TraverseEdges<ccOperator::insertEdge>(custing, deviceCCData, srcs, dsts, len);
+	allEinA_TraverseEdges<ccOperator::insertEdge>(custing, deviceCCData, bu);
 
 }
 
