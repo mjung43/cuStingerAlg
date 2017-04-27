@@ -1,7 +1,10 @@
 #pragma once
 
 #include "algs.cuh"
+<<<<<<< HEAD
 #include "operators.cuh"
+=======
+>>>>>>> a2e04978b98cd56b4ce6a6d7122a4135d1d3b28a
 
 // Connected Components
 
@@ -62,12 +65,18 @@ public:
 		copyArrayDeviceToHost(hostCCData.level, hostArr, hostCCData.nv, sizeof(vertexId_t) );
 	}
 
+<<<<<<< HEAD
 	void InsertEdges(cuStinger& custing, BatchUpdate& bu, length_t len);
 
 protected:
 	ccData hostCCData, *deviceCCData;
 private:
     cusLoadBalance* cusLB;
+=======
+	void InsertEdges(cuStinger& custing, vertexId_t* s, vertexId_t* t, length_t len);
+
+	ccData hostCCData, *deviceCCData;
+>>>>>>> a2e04978b98cd56b4ce6a6d7122a4135d1d3b28a
 
 };
 
@@ -153,6 +162,7 @@ public:
 };
 
 template <cusSubKernelEdge cusSK>
+<<<<<<< HEAD
 static __global__ void device_allEinA_TraverseEdges(cuStinger* custing,void* metadata, BatchUpdateData* bud, int32_t edgesPerThreadBlock){
 	length_t e_init=blockIdx.x*edgesPerThreadBlock+threadIdx.x;
 	length_t batchSize = *(bud->getBatchSize());
@@ -183,9 +193,37 @@ static void allEinA_TraverseEdges(cuStinger& custing, void* metadata, BatchUpdat
 	device_allEinA_TraverseEdges<cusSK><<<numBlocks, threadsPerBlock>>>(custing.devicePtr(), metadata, bu.getDeviceBUD()->devicePtr(), edgesPerThreadBlock);
 
 
+=======
+static __global__ void device_allEinAs_TraverseEdges(cuStinger* custing, void* metadata, int32_t edgesPerThreadBlock, vertexId_t* srcs, vertexId_t* dsts, length_t len) {
+	vertexId_t v_init = blockIdx.x * edgesPerThreadBlock + threadIdx.x;
+
+	for (vertexId_t v_hat = 0; v_hat < edgesPerThreadBlock; v_hat+=blockDim.x){
+		vertexId_t v = v_init + v_hat;
+		if(v > len){
+			break;
+		}
+		vertexId_t src = srcs[v];
+		vertexId_t dst = srcs[v];		
+		(cusSK) (custing, src, dst, metadata);
+	}
+}
+
+template <cusSubKernelEdge cusSK>
+static void allEinAs_TraverseEdges(cuStinger& custing, void* metadata, vertexId_t* srcs, vertexId_t* dsts, length_t len) {
+	dim3 numBlocks(1, 1); int32_t threads=32;
+	dim3 threadsPerBlock(threads, 1);
+	int32_t edgesPerThreadBlock = 512;
+
+	numBlocks.x = ceil((float) len / (float) edgesPerThreadBlock);
+	device_allEinAs_TraverseEdges<cusSK><<<numBlocks, threadsPerBlock>>>(custing.devicePtr(), metadata, edgesPerThreadBlock, srcs, dsts, len);
+>>>>>>> a2e04978b98cd56b4ce6a6d7122a4135d1d3b28a
 }
 
 
 
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a2e04978b98cd56b4ce6a6d7122a4135d1d3b28a
